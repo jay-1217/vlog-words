@@ -1,0 +1,27 @@
+'use client'
+
+import { useWords } from '@/hooks/useWords'
+import AddWordForm from '@/components/AddWordForm'
+import WordList from '@/components/WordList'
+
+export default function Home() {
+  const { words, addWord, toggleStatus, deleteWord } = useWords()
+
+  return (
+    <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
+      {/* Header */}
+      <header>
+        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight">Vlog Words</h1>
+        <p className="text-sm text-gray-400 mt-0.5">从 Vlog 里学英语</p>
+      </header>
+
+      <AddWordForm onAdd={addWord} />
+
+      <WordList
+        words={words}
+        onToggleStatus={toggleStatus}
+        onDelete={deleteWord}
+      />
+    </div>
+  )
+}
