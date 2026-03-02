@@ -35,5 +35,15 @@ export function useWords() {
     setWords(prev => prev.filter(w => w.id !== id))
   }
 
-  return { words, addWord, toggleStatus, deleteWord }
+  function incrementViewCount(id: number) {
+    setWords(prev =>
+      prev.map(w =>
+        w.id === id
+          ? { ...w, viewCount: (w.viewCount ?? 0) + 1 }
+          : w
+      )
+    )
+  }
+
+  return { words, addWord, toggleStatus, deleteWord, incrementViewCount }
 }

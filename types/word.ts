@@ -8,4 +8,6 @@ export interface Word {
   source: string        // e.g. Vlog title (optional)
   status: WordStatus
   createdAt: string
+  phonetic?: string     // phonetic transcription, e.g. "/ˈæp.əl/"
+  viewCount?: number    // number of times viewed
 }

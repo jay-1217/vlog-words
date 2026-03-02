@@ -7,6 +7,7 @@ interface Props {
   word: Word
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
+  onIncrementViewCount: (id: number) => void
 }
 
 function speak(text: string) {
@@ -18,14 +19,20 @@ function speak(text: string) {
   window.speechSynthesis.speak(utter)
 }
 
-export default function WordCard({ word, onToggleStatus, onDelete }: Props) {
+export default function WordCard({ word, onToggleStatus, onDelete, onIncrementViewCount }: Props) {
   const [flipped, setFlipped] = useState(false)
 
   return (
     <div
       className="group"
       style={{ perspective: '1000px', minHeight: '200px' }}
-      onClick={() => setFlipped(f => !f)}
+      onClick={() => {
+        const newFlipped = !flipped
+        setFlipped(newFlipped)
+        if (newFlipped) {
+          onIncrementViewCount(word.id)
+        }
+      }}
     >
       <div
         className="relative w-full h-full transition-transform duration-500"
@@ -44,6 +51,11 @@ export default function WordCard({ word, onToggleStatus, onDelete }: Props) {
             <p className="text-xl sm:text-2xl font-semibold text-gray-900 tracking-tight leading-snug">
               {word.text}
             </p>
+            {word.phonetic && (
+              <p className="text-sm text-gray-400 mt-1 font-mono">
+                {word.phonetic}
+              </p>
+            )}
             {word.source && (
               <p className="text-xs text-gray-300 mt-1">📹 {word.source}</p>
             )}
@@ -82,6 +94,11 @@ export default function WordCard({ word, onToggleStatus, onDelete }: Props) {
             {word.example && (
               <p className="text-xs text-gray-400 italic leading-relaxed border-t border-gray-100 pt-2 mt-1">
                 {word.example}
+              </p>
+            )}
+            {word.viewCount !== undefined && word.viewCount > 0 && (
+              <p className="text-xs text-gray-300 mt-2">
+                已查看 {word.viewCount} 次
               </p>
             )}
           </div>

@@ -29,6 +29,7 @@ export default function AddWordForm({ onAdd }: Props) {
   const [fields, setFields] = useState<ManualFields>({ translation: '', example: '', source: '' })
   const [apiHint, setApiHint] = useState('')
   const [engRef, setEngRef] = useState('')
+  const [phonetic, setPhonetic] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const translationRef = useRef<HTMLTextAreaElement>(null)
 
@@ -44,6 +45,7 @@ export default function AddWordForm({ onAdd }: Props) {
     setLoading(true)
     setApiHint('')
     setEngRef('')
+    setPhonetic('')
 
     // Step 1: fetch DictionaryAPI + plain MyMemory in parallel
     const [dictRes, plainTransRes] = await Promise.allSettled([
@@ -69,6 +71,15 @@ export default function AddWordForm({ onAdd }: Props) {
     if (dictOk) {
       try {
         const data = await dictRes.value.json()
+
+        // Extract phonetic transcription
+        let phoneticText = data[0]?.phonetic ?? ''
+        // If root phonetic is empty, try phonetics array
+        if (!phoneticText && data[0]?.phonetics?.length > 0) {
+          phoneticText = data[0].phonetics[0]?.text ?? ''
+        }
+        setPhonetic(phoneticText)
+
         const meanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] =
           data[0]?.meanings ?? []
 
@@ -129,12 +140,14 @@ export default function AddWordForm({ onAdd }: Props) {
       source: fields.source.trim(),
       status: 'reviewing',
       createdAt: new Date().toLocaleDateString('zh-CN'),
+      phonetic: phonetic || undefined,
     })
     setInput('')
     setFields({ translation: '', example: '', source: '' })
     setShowManual(false)
     setApiHint('')
     setEngRef('')
+    setPhonetic('')
     inputRef.current?.focus()
   }
 

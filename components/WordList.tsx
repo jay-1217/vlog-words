@@ -10,6 +10,7 @@ interface Props {
   words: Word[]
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
+  onIncrementViewCount: (id: number) => void
 }
 
 const FILTERS: { label: string; value: Filter }[] = [
@@ -18,7 +19,7 @@ const FILTERS: { label: string; value: Filter }[] = [
   { label: '已学会', value: 'learned' },
 ]
 
-export default function WordList({ words, onToggleStatus, onDelete }: Props) {
+export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
 
   const filtered = filter === 'all' ? words : words.filter(w => w.status === filter)
@@ -56,6 +57,7 @@ export default function WordList({ words, onToggleStatus, onDelete }: Props) {
               word={w}
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
+              onIncrementViewCount={onIncrementViewCount}
             />
           ))}
         </div>

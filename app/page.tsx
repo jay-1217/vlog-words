@@ -5,7 +5,7 @@ import AddWordForm from '@/components/AddWordForm'
 import WordList from '@/components/WordList'
 
 export default function Home() {
-  const { words, addWord, toggleStatus, deleteWord } = useWords()
+  const { words, addWord, toggleStatus, deleteWord, incrementViewCount } = useWords()
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10 space-y-8">
@@ -21,6 +21,7 @@ export default function Home() {
         words={words}
         onToggleStatus={toggleStatus}
         onDelete={deleteWord}
+        onIncrementViewCount={incrementViewCount}
       />
     </div>
   )
