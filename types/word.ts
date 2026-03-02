@@ -10,4 +10,6 @@ export interface Word {
   createdAt: string
   phonetic?: string     // phonetic transcription, e.g. "/ˈæp.əl/"
   viewCount?: number    // number of times viewed
+  derivatives?: { [key: string]: string }  // word forms, e.g. { "noun": "happiness", "adjective": "happy" }
+  category?: string     // theme category, e.g. "旅行", "商务"
 }

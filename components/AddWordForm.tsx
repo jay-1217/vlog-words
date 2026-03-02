@@ -5,6 +5,8 @@ import { Word } from '@/types/word'
 
 interface Props {
   onAdd: (word: Word) => void
+  categories: string[]
+  onAddCategory: (category: string) => void
 }
 
 interface ManualFields {
@@ -19,10 +21,42 @@ const POS_MAP: Record<string, string> = {
   interjection: 'int.', exclamation: 'int.',
 }
 
+// Extract word forms from definitions (noun form, verb form, etc.)
+function extractDerivatives(meanings: any[]): { [key: string]: string } {
+  const derivatives: { [key: string]: string } = {}
+
+  for (const meaning of meanings) {
+    const pos = meaning.partOfSpeech
+    const definitions = meaning.definitions || []
+
+    for (const def of definitions) {
+      const text = def.definition || ''
+
+      // Pattern matching for common derivative indicators
+      const patterns = [
+        /(?:noun form|as a noun)[:\s]+(\w+)/i,
+        /(?:verb form|as a verb)[:\s]+(\w+)/i,
+        /(?:adjective form|as an adjective)[:\s]+(\w+)/i,
+        /(?:adverb form|as an adverb)[:\s]+(\w+)/i,
+      ]
+
+      for (const pattern of patterns) {
+        const match = text.match(pattern)
+        if (match && match[1]) {
+          const formType = pattern.source.match(/(\w+) form/)?.[1] || pos
+          derivatives[formType] = match[1]
+        }
+      }
+    }
+  }
+
+  return derivatives
+}
+
 const textareaClass =
   'w-full border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800 placeholder-gray-300 focus:outline-none focus:border-indigo-400 transition-colors resize-none'
 
-export default function AddWordForm({ onAdd }: Props) {
+export default function AddWordForm({ onAdd, categories, onAddCategory }: Props) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [showManual, setShowManual] = useState(false)
@@ -30,6 +64,10 @@ export default function AddWordForm({ onAdd }: Props) {
   const [apiHint, setApiHint] = useState('')
   const [engRef, setEngRef] = useState('')
   const [phonetic, setPhonetic] = useState('')
+  const [derivatives, setDerivatives] = useState<{ [key: string]: string }>({})
+  const [selectedCategory, setSelectedCategory] = useState('未分类')
+  const [showNewCategory, setShowNewCategory] = useState(false)
+  const [newCategoryInput, setNewCategoryInput] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const translationRef = useRef<HTMLTextAreaElement>(null)
 
@@ -46,6 +84,7 @@ export default function AddWordForm({ onAdd }: Props) {
     setApiHint('')
     setEngRef('')
     setPhonetic('')
+    setDerivatives({})
 
     // Step 1: fetch DictionaryAPI + plain MyMemory in parallel
     const [dictRes, plainTransRes] = await Promise.allSettled([
@@ -72,16 +111,37 @@ export default function AddWordForm({ onAdd }: Props) {
       try {
         const data = await dictRes.value.json()
 
-        // Extract phonetic transcription
-        let phoneticText = data[0]?.phonetic ?? ''
-        // If root phonetic is empty, try phonetics array
+        // Extract phonetic transcription with US priority
+        let phoneticText = ''
+
+        // Priority 1: Look for US phonetic in phonetics array
+        if (data[0]?.phonetics?.length > 0) {
+          const usPhonetic = data[0].phonetics.find((p: any) =>
+            p.audio?.includes('-us-') || p.audio?.includes('-us.mp3')
+          )
+          if (usPhonetic?.text) {
+            phoneticText = usPhonetic.text
+          }
+        }
+
+        // Priority 2: Fall back to root phonetic
+        if (!phoneticText) {
+          phoneticText = data[0]?.phonetic ?? ''
+        }
+
+        // Priority 3: Fall back to first available phonetic
         if (!phoneticText && data[0]?.phonetics?.length > 0) {
           phoneticText = data[0].phonetics[0]?.text ?? ''
         }
+
         setPhonetic(phoneticText)
 
         const meanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] =
           data[0]?.meanings ?? []
+
+        // Extract derivatives
+        const derivativesData = extractDerivatives(meanings)
+        setDerivatives(derivativesData)
 
         // Extract first available example
         for (const m of meanings) {
@@ -141,6 +201,8 @@ export default function AddWordForm({ onAdd }: Props) {
       status: 'reviewing',
       createdAt: new Date().toLocaleDateString('zh-CN'),
       phonetic: phonetic || undefined,
+      derivatives: Object.keys(derivatives).length > 0 ? derivatives : undefined,
+      category: selectedCategory,
     })
     setInput('')
     setFields({ translation: '', example: '', source: '' })
@@ -148,6 +210,10 @@ export default function AddWordForm({ onAdd }: Props) {
     setApiHint('')
     setEngRef('')
     setPhonetic('')
+    setDerivatives({})
+    setSelectedCategory('未分类')
+    setShowNewCategory(false)
+    setNewCategoryInput('')
     inputRef.current?.focus()
   }
 
@@ -217,6 +283,53 @@ export default function AddWordForm({ onAdd }: Props) {
               placeholder="如：Japan Trip Day 3"
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800 placeholder-gray-300 focus:outline-none focus:border-indigo-400 transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">主题分类</label>
+            <div className="flex gap-2">
+              <select
+                value={selectedCategory}
+                onChange={e => {
+                  if (e.target.value === '__new__') {
+                    setShowNewCategory(true)
+                  } else {
+                    setSelectedCategory(e.target.value)
+                    setShowNewCategory(false)
+                  }
+                }}
+                className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800 focus:outline-none focus:border-indigo-400 transition-colors"
+              >
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+                <option value="__new__">+ 新建分类</option>
+              </select>
+            </div>
+            {showNewCategory && (
+              <div className="flex gap-2 mt-2">
+                <input
+                  value={newCategoryInput}
+                  onChange={e => setNewCategoryInput(e.target.value)}
+                  placeholder="输入新分类名称"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800 placeholder-gray-300 focus:outline-none focus:border-indigo-400 transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (newCategoryInput.trim()) {
+                      onAddCategory(newCategoryInput.trim())
+                      setSelectedCategory(newCategoryInput.trim())
+                      setNewCategoryInput('')
+                      setShowNewCategory(false)
+                    }
+                  }}
+                  className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors"
+                >
+                  确定
+                </button>
+              </div>
+            )}
           </div>
 
           <button

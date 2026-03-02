@@ -96,9 +96,20 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
                 {word.example}
               </p>
             )}
+            {word.derivatives && Object.keys(word.derivatives).length > 0 && (
+              <div className="text-xs text-gray-400 border-t border-gray-100 pt-2 mt-1">
+                <span className="font-medium text-gray-500">词形：</span>
+                {Object.entries(word.derivatives).map(([type, form], idx) => (
+                  <span key={type}>
+                    {idx > 0 && ' · '}
+                    <span className="text-gray-500">{type}</span>: {form}
+                  </span>
+                ))}
+              </div>
+            )}
             {word.viewCount !== undefined && word.viewCount > 0 && (
               <p className="text-xs text-gray-300 mt-2">
-                已查看 {word.viewCount} 次
+                已查看 <span className="font-bold text-purple-500">{word.viewCount}</span> 次
               </p>
             )}
           </div>

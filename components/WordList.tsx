@@ -11,6 +11,7 @@ interface Props {
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
   onIncrementViewCount: (id: number) => void
+  categories: string[]
 }
 
 const FILTERS: { label: string; value: Filter }[] = [
@@ -19,10 +20,14 @@ const FILTERS: { label: string; value: Filter }[] = [
   { label: '已学会', value: 'learned' },
 ]
 
-export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount }: Props) {
+export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount, categories }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
+  const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
-  const filtered = filter === 'all' ? words : words.filter(w => w.status === filter)
+  let filtered = filter === 'all' ? words : words.filter(w => w.status === filter)
+  if (categoryFilter !== 'all') {
+    filtered = filtered.filter(w => (w.category || '未分类') === categoryFilter)
+  }
 
   return (
     <div>
@@ -46,6 +51,33 @@ export default function WordList({ words, onToggleStatus, onDelete, onIncrementV
         <p className="text-xs text-gray-300">
           {filtered.length} / {words.length} 个单词
         </p>
+      </div>
+
+      {/* Category filter */}
+      <div className="flex gap-1.5 flex-wrap mb-5">
+        <button
+          onClick={() => setCategoryFilter('all')}
+          className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+            categoryFilter === 'all'
+              ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+              : 'border-gray-200 text-gray-400 hover:border-gray-300'
+          }`}
+        >
+          全部分类
+        </button>
+        {categories.map(cat => (
+          <button
+            key={cat}
+            onClick={() => setCategoryFilter(cat)}
+            className={`text-xs px-2.5 py-1 rounded-lg border transition-all ${
+              categoryFilter === cat
+                ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                : 'border-gray-200 text-gray-400 hover:border-gray-300'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       {/* Grid */}
