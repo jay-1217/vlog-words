@@ -97,19 +97,25 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
               </p>
             )}
             {word.derivatives && Object.keys(word.derivatives).length > 0 && (
-              <div className="text-xs text-gray-400 border-t border-gray-100 pt-2 mt-1">
-                <span className="font-medium text-gray-500">词形：</span>
-                {Object.entries(word.derivatives).map(([type, form], idx) => (
-                  <span key={type}>
-                    {idx > 0 && ' · '}
-                    <span className="text-gray-500">{type}</span>: {form}
-                  </span>
-                ))}
+              <div className="border-t border-gray-100 pt-2 mt-1">
+                <span className="text-xs font-medium text-gray-500 block mb-1.5">词形：</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.entries(word.derivatives).map(([type, form]) => (
+                    <span
+                      key={type}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full"
+                    >
+                      <span className="font-medium">{type}</span>
+                      <span className="text-indigo-500">·</span>
+                      <span>{form}</span>
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
             {word.viewCount !== undefined && word.viewCount > 0 && (
               <p className="text-xs text-gray-300 mt-2">
-                已查看 <span className="font-bold text-purple-500">{word.viewCount}</span> 次
+                已查看 <span className="font-bold" style={{ color: '#7C3AED' }}>{word.viewCount}</span> 次
               </p>
             )}
           </div>

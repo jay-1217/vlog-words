@@ -21,32 +21,18 @@ const POS_MAP: Record<string, string> = {
   interjection: 'int.', exclamation: 'int.',
 }
 
-// Extract word forms from definitions (noun form, verb form, etc.)
+// Extract all part-of-speech types and their first definition
 function extractDerivatives(meanings: any[]): { [key: string]: string } {
   const derivatives: { [key: string]: string } = {}
 
   for (const meaning of meanings) {
     const pos = meaning.partOfSpeech
-    const definitions = meaning.definitions || []
+    const firstDef = meaning.definitions?.[0]?.definition || ''
 
-    for (const def of definitions) {
-      const text = def.definition || ''
-
-      // Pattern matching for common derivative indicators
-      const patterns = [
-        /(?:noun form|as a noun)[:\s]+(\w+)/i,
-        /(?:verb form|as a verb)[:\s]+(\w+)/i,
-        /(?:adjective form|as an adjective)[:\s]+(\w+)/i,
-        /(?:adverb form|as an adverb)[:\s]+(\w+)/i,
-      ]
-
-      for (const pattern of patterns) {
-        const match = text.match(pattern)
-        if (match && match[1]) {
-          const formType = pattern.source.match(/(\w+) form/)?.[1] || pos
-          derivatives[formType] = match[1]
-        }
-      }
+    if (pos && firstDef) {
+      // Use abbreviated form if available
+      const abbr = POS_MAP[pos] || pos
+      derivatives[abbr] = firstDef
     }
   }
 
@@ -129,12 +115,17 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
           phoneticText = data[0]?.phonetic ?? ''
         }
 
-        // Priority 3: Fall back to first available phonetic
+        // Priority 3: Iterate through ALL phonetics entries to find first valid text
         if (!phoneticText && data[0]?.phonetics?.length > 0) {
-          phoneticText = data[0].phonetics[0]?.text ?? ''
+          for (const p of data[0].phonetics) {
+            if (p.text) {
+              phoneticText = p.text
+              break
+            }
+          }
         }
 
-        setPhonetic(phoneticText)
+        setPhonetic(phoneticText || '/  /')  // 如果完全没有音标，使用占位符
 
         const meanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] =
           data[0]?.meanings ?? []
@@ -168,8 +159,11 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
 
           detailLines = meanings.slice(0, parts.length).map((m, i) => {
             const abbr = POS_MAP[m.partOfSpeech] ?? m.partOfSpeech
-            return `${abbr} ${parts[i]}`
-          }).join('；')
+            // Extract only 1-4 core Chinese characters
+            const coreMatch = parts[i].match(/[\u4e00-\u9fa5]{1,4}/)
+            const coreWord = coreMatch ? coreMatch[0] : parts[i].slice(0, 4)
+            return `${abbr} ${coreWord}`
+          }).join('; ')
         }
       } catch { /* ignore */ }
     }
