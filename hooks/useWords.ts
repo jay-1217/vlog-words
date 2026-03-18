@@ -66,13 +66,12 @@ export function useWords() {
     )
   }
 
-  function markReviewed(id: number) {
+  function advanceReview(id: number) {
     setWords(prev =>
       prev.map(w => {
         if (w.id !== id) return w
         const stage = w.review_stage ?? 0
-        const nextStage = isDueForReview(w) ? Math.min(stage + 1, 7) : stage
-        return { ...w, review_stage: nextStage, last_review_date: new Date().toISOString() }
+        return { ...w, review_stage: Math.min(stage + 1, 7), last_review_date: new Date().toISOString() }
       })
     )
   }
@@ -86,7 +85,6 @@ export function useWords() {
   function deleteCategory(category: string) {
     if (category === DEFAULT_CATEGORY) return
     setCategories(prev => prev.filter(c => c !== category))
-    // Move words in this category to uncategorized
     setWords(prev =>
       prev.map(w =>
         w.category === category ? { ...w, category: DEFAULT_CATEGORY } : w
@@ -94,5 +92,5 @@ export function useWords() {
     )
   }
 
-  return { words, addWord, toggleStatus, deleteWord, incrementViewCount, markReviewed, categories, addCategory, deleteCategory }
+  return { words, addWord, toggleStatus, deleteWord, incrementViewCount, advanceReview, categories, addCategory, deleteCategory }
 }

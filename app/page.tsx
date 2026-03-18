@@ -12,7 +12,7 @@ export default function Home() {
     toggleStatus,
     deleteWord,
     incrementViewCount,
-    markReviewed,
+    advanceReview,
     categories,
     addCategory,
     deleteCategory
@@ -40,7 +40,7 @@ export default function Home() {
         onToggleStatus={toggleStatus}
         onDelete={deleteWord}
         onIncrementViewCount={incrementViewCount}
-        onMarkReviewed={markReviewed}
+        onAdvanceReview={advanceReview}
         categories={categories}
       />
     </div>

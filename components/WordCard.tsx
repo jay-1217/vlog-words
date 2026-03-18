@@ -8,7 +8,7 @@ interface Props {
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
   onIncrementViewCount: (id: number) => void
-  onMarkReviewed: (id: number) => void
+  onAdvanceReview: (id: number) => void
   isDue: boolean
 }
 
@@ -21,7 +21,7 @@ function speak(text: string) {
   window.speechSynthesis.speak(utter)
 }
 
-export default function WordCard({ word, onToggleStatus, onDelete, onIncrementViewCount, onMarkReviewed, isDue }: Props) {
+export default function WordCard({ word, onToggleStatus, onDelete, onIncrementViewCount, onAdvanceReview, isDue }: Props) {
   const [flipped, setFlipped] = useState(false)
 
   return (
@@ -33,7 +33,6 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
         setFlipped(newFlipped)
         if (newFlipped) {
           onIncrementViewCount(word.id)
-          onMarkReviewed(word.id)
         }
       }}
     >
@@ -129,29 +128,44 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
                 已查看 <span className="font-bold" style={{ color: '#7C3AED' }}>{word.viewCount}</span> 次
               </p>
             )}
-            {isDue && (
-              <p className="text-xs text-amber-500 font-medium mt-1">
-                该复习了 · 阶段 {(word.review_stage ?? 0) + 1}/8
-              </p>
-            )}
           </div>
           <div className="flex items-center justify-between mt-3">
-            <button
-              onClick={e => { e.stopPropagation(); onToggleStatus(word.id) }}
-              className={`text-sm font-medium px-3 py-2 rounded-full transition-colors min-h-[44px] flex items-center ${
-                word.status === 'learned'
-                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                  : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              }`}
-            >
-              {word.status === 'learned' ? '✓ 已学会' : '↻ 复习中'}
-            </button>
-            <button
-              onClick={e => { e.stopPropagation(); onDelete(word.id) }}
-              className="text-xs text-gray-300 hover:text-red-400 transition-colors px-3 py-2 rounded-lg hover:bg-red-50 min-h-[44px] flex items-center"
-            >
-              删除
-            </button>
+            {isDue ? (
+              <div className="flex gap-2 w-full">
+                <button
+                  onClick={e => { e.stopPropagation(); setFlipped(false) }}
+                  className="flex-1 text-sm font-medium px-3 py-2 rounded-full transition-colors min-h-[44px] bg-gray-100 text-gray-500 hover:bg-red-50 hover:text-red-500"
+                >
+                  还没记住
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); onAdvanceReview(word.id); setFlipped(false) }}
+                  className="flex-1 text-sm font-medium px-3 py-2 rounded-full transition-colors min-h-[44px] text-white"
+                  style={{ backgroundColor: '#7C3AED' }}
+                >
+                  记住了，过关 ✓
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  onClick={e => { e.stopPropagation(); onToggleStatus(word.id) }}
+                  className={`text-sm font-medium px-3 py-2 rounded-full transition-colors min-h-[44px] flex items-center ${
+                    word.status === 'learned'
+                      ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                      : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                  }`}
+                >
+                  {word.status === 'learned' ? '✓ 已学会' : '↻ 复习中'}
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); onDelete(word.id) }}
+                  className="text-xs text-gray-300 hover:text-red-400 transition-colors px-3 py-2 rounded-lg hover:bg-red-50 min-h-[44px] flex items-center"
+                >
+                  删除
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

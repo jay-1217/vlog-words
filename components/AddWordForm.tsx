@@ -149,9 +149,36 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
         const meanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] =
           data[0]?.meanings ?? []
 
-        // Extract derivatives
+        // Extract derivatives and batch-translate them
         const derivativesData = extractDerivatives(meanings, term)
-        setDerivatives(derivativesData)
+        const derivWords = Object.values(derivativesData)
+        if (derivWords.length > 0) {
+          try {
+            const derivRes = await fetch(
+              `https://api.mymemory.translated.net/get?q=${encodeURIComponent(derivWords.join(' | '))}&langpair=en|zh-CN`
+            )
+            if (derivRes.ok) {
+              const derivData = await derivRes.json()
+              const derivTranslated: string = derivData?.responseData?.translatedText ?? ''
+              const derivParts = derivTranslated.split('|').map((s: string) => s.trim())
+              const keys = Object.keys(derivativesData)
+              const enriched: { [key: string]: string } = {}
+              keys.forEach((k, i) => {
+                const engForm = derivativesData[k]
+                const cnMatch = (derivParts[i] ?? '').match(/[\u4e00-\u9fa5]{1,6}/)
+                const cn = cnMatch ? cnMatch[0] : ''
+                enriched[k] = cn ? `${engForm} (${cn})` : engForm
+              })
+              setDerivatives(enriched)
+            } else {
+              setDerivatives(derivativesData)
+            }
+          } catch {
+            setDerivatives(derivativesData)
+          }
+        } else {
+          setDerivatives(derivativesData)
+        }
 
         // Extract first available example
         for (const m of meanings) {

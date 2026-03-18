@@ -11,7 +11,7 @@ interface Props {
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
   onIncrementViewCount: (id: number) => void
-  onMarkReviewed: (id: number) => void
+  onAdvanceReview: (id: number) => void
   categories: string[]
 }
 
@@ -22,7 +22,7 @@ const FILTERS: { label: string; value: Filter }[] = [
   { label: '今日待复习', value: 'due' },
 ]
 
-export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount, onMarkReviewed, categories }: Props) {
+export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount, onAdvanceReview, categories }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
@@ -102,7 +102,7 @@ export default function WordList({ words, onToggleStatus, onDelete, onIncrementV
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onIncrementViewCount={onIncrementViewCount}
-              onMarkReviewed={onMarkReviewed}
+              onAdvanceReview={onAdvanceReview}
               isDue={isDueForReview(w)}
             />
           ))}
