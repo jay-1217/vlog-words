@@ -1,16 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Word, WordStatus } from '@/types/word'
+import { Word, WordStatus, isDueForReview } from '@/types/word'
 import WordCard from './WordCard'
 
-type Filter = 'all' | WordStatus
+type Filter = 'all' | WordStatus | 'due'
 
 interface Props {
   words: Word[]
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
   onIncrementViewCount: (id: number) => void
+  onMarkReviewed: (id: number) => void
   categories: string[]
 }
 
@@ -18,16 +19,20 @@ const FILTERS: { label: string; value: Filter }[] = [
   { label: '全部', value: 'all' },
   { label: '复习中', value: 'reviewing' },
   { label: '已学会', value: 'learned' },
+  { label: '今日待复习', value: 'due' },
 ]
 
-export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount, categories }: Props) {
+export default function WordList({ words, onToggleStatus, onDelete, onIncrementViewCount, onMarkReviewed, categories }: Props) {
   const [filter, setFilter] = useState<Filter>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
 
-  let filtered = filter === 'all' ? words : words.filter(w => w.status === filter)
+  let filtered = filter === 'due'
+    ? words.filter(isDueForReview)
+    : filter === 'all' ? words : words.filter(w => w.status === filter)
   if (categoryFilter !== 'all') {
     filtered = filtered.filter(w => (w.category || '未分类') === categoryFilter)
   }
+  const dueCount = words.filter(isDueForReview).length
 
   return (
     <div>
@@ -38,13 +43,20 @@ export default function WordList({ words, onToggleStatus, onDelete, onIncrementV
             <button
               key={f.value}
               onClick={() => setFilter(f.value)}
-              className={`text-sm px-3 py-1.5 rounded-lg border transition-all font-medium ${
+              className={`text-sm px-3 py-1.5 rounded-lg border transition-all font-medium flex items-center gap-1.5 ${
                 filter === f.value
                   ? 'bg-gray-900 text-white border-gray-900'
                   : 'border-gray-200 text-gray-500 hover:border-gray-300'
               }`}
             >
               {f.label}
+              {f.value === 'due' && dueCount > 0 && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                  filter === 'due' ? 'bg-amber-400 text-white' : 'bg-amber-100 text-amber-600'
+                }`}>
+                  {dueCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -90,6 +102,8 @@ export default function WordList({ words, onToggleStatus, onDelete, onIncrementV
               onToggleStatus={onToggleStatus}
               onDelete={onDelete}
               onIncrementViewCount={onIncrementViewCount}
+              onMarkReviewed={onMarkReviewed}
+              isDue={isDueForReview(w)}
             />
           ))}
         </div>

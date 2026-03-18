@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Word } from '@/types/word'
+import { Word, isDueForReview } from '@/types/word'
 
 const STORAGE_KEY = 'vlog_words'
 const CATEGORIES_KEY = 'vlog_categories'
@@ -13,7 +13,15 @@ export function useWords() {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) setWords(JSON.parse(stored))
+    if (stored) {
+      const parsed: Word[] = JSON.parse(stored)
+      const migrated = parsed.map(w => ({
+        ...w,
+        review_stage: w.review_stage ?? 0,
+        last_review_date: w.last_review_date ?? w.createdAt,
+      }))
+      setWords(migrated)
+    }
 
     const storedCategories = localStorage.getItem(CATEGORIES_KEY)
     if (storedCategories) {
@@ -30,7 +38,8 @@ export function useWords() {
   }, [categories])
 
   function addWord(word: Word) {
-    setWords(prev => [word, ...prev])
+    const now = new Date().toISOString()
+    setWords(prev => [{ ...word, review_stage: 0, last_review_date: now }, ...prev])
   }
 
   function toggleStatus(id: number) {
@@ -57,6 +66,17 @@ export function useWords() {
     )
   }
 
+  function markReviewed(id: number) {
+    setWords(prev =>
+      prev.map(w => {
+        if (w.id !== id) return w
+        const stage = w.review_stage ?? 0
+        const nextStage = isDueForReview(w) ? Math.min(stage + 1, 7) : stage
+        return { ...w, review_stage: nextStage, last_review_date: new Date().toISOString() }
+      })
+    )
+  }
+
   function addCategory(category: string) {
     if (category && !categories.includes(category)) {
       setCategories(prev => [...prev, category])
@@ -74,5 +94,5 @@ export function useWords() {
     )
   }
 
-  return { words, addWord, toggleStatus, deleteWord, incrementViewCount, categories, addCategory, deleteCategory }
+  return { words, addWord, toggleStatus, deleteWord, incrementViewCount, markReviewed, categories, addCategory, deleteCategory }
 }

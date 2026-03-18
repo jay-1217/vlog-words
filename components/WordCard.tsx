@@ -8,6 +8,8 @@ interface Props {
   onToggleStatus: (id: number) => void
   onDelete: (id: number) => void
   onIncrementViewCount: (id: number) => void
+  onMarkReviewed: (id: number) => void
+  isDue: boolean
 }
 
 function speak(text: string) {
@@ -19,7 +21,7 @@ function speak(text: string) {
   window.speechSynthesis.speak(utter)
 }
 
-export default function WordCard({ word, onToggleStatus, onDelete, onIncrementViewCount }: Props) {
+export default function WordCard({ word, onToggleStatus, onDelete, onIncrementViewCount, onMarkReviewed, isDue }: Props) {
   const [flipped, setFlipped] = useState(false)
 
   return (
@@ -31,6 +33,7 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
         setFlipped(newFlipped)
         if (newFlipped) {
           onIncrementViewCount(word.id)
+          onMarkReviewed(word.id)
         }
       }}
     >
@@ -44,7 +47,9 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
       >
         {/* Front */}
         <div
-          className="absolute inset-0 bg-white border border-gray-100 rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-sm group-hover:shadow-md transition-shadow"
+          className={`absolute inset-0 bg-white rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-sm group-hover:shadow-md transition-shadow border-2 ${
+            isDue ? 'border-amber-400' : 'border-gray-100'
+          }`}
           style={{ backfaceVisibility: 'hidden' }}
         >
           <div>
@@ -98,7 +103,7 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
             )}
             {word.derivatives && Object.keys(word.derivatives).length > 0 && (
               <div className="border-t border-gray-100 pt-2 mt-1">
-                <span className="text-xs font-medium text-gray-500 block mb-1.5">词形：</span>
+                <span className="text-xs font-medium text-gray-500 block mb-1.5">词汇拓展：</span>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.entries(word.derivatives).map(([type, form]) => (
                     <span
@@ -113,9 +118,20 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
                 </div>
               </div>
             )}
+            {!word.derivatives && (
+              <div className="border-t border-gray-100 pt-2 mt-1">
+                <span className="text-xs font-medium text-gray-500 block mb-1">词汇拓展：</span>
+                <p className="text-xs text-gray-300">暂无词形变化</p>
+              </div>
+            )}
             {word.viewCount !== undefined && word.viewCount > 0 && (
               <p className="text-xs text-gray-300 mt-2">
                 已查看 <span className="font-bold" style={{ color: '#7C3AED' }}>{word.viewCount}</span> 次
+              </p>
+            )}
+            {isDue && (
+              <p className="text-xs text-amber-500 font-medium mt-1">
+                该复习了 · 阶段 {(word.review_stage ?? 0) + 1}/8
               </p>
             )}
           </div>

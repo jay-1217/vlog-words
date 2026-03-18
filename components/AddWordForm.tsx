@@ -22,21 +22,40 @@ const POS_MAP: Record<string, string> = {
 }
 
 // Extract all part-of-speech types and their first definition
-function extractDerivatives(meanings: any[]): { [key: string]: string } {
-  const derivatives: { [key: string]: string } = {}
+const SUFFIX_RULES: { suffix: string; label: string }[] = [
+  { suffix: 'ness', label: 'n.' },
+  { suffix: 'tion', label: 'n.' },
+  { suffix: 'ly', label: 'adv.' },
+  { suffix: 'able', label: 'adj.' },
+  { suffix: 'ing', label: 'v.' },
+  { suffix: 'ed', label: 'v.' },
+]
+
+function extractDerivatives(meanings: any[], baseWord: string): { [key: string]: string } {
+  const result: { [key: string]: string } = {}
+  const base = baseWord.toLowerCase()
 
   for (const meaning of meanings) {
-    const pos = meaning.partOfSpeech
-    const firstDef = meaning.definitions?.[0]?.definition || ''
+    const abbr = POS_MAP[meaning.partOfSpeech] || meaning.partOfSpeech
+    const synonyms: string[] = [
+      ...(meaning.synonyms ?? []),
+      ...(meaning.definitions ?? []).flatMap((d: any) => d.synonyms ?? []),
+    ]
+    const related = synonyms.find(s =>
+      s !== base && s.length > 2 &&
+      (s.startsWith(base.slice(0, 4)) || base.startsWith(s.slice(0, 4)))
+    )
+    if (related && !result[abbr]) result[abbr] = related
+  }
 
-    if (pos && firstDef) {
-      // Use abbreviated form if available
-      const abbr = POS_MAP[pos] || pos
-      derivatives[abbr] = firstDef
+  // fallback：后缀生成
+  if (Object.keys(result).length === 0) {
+    for (const rule of SUFFIX_RULES) {
+      if (!result[rule.label]) result[rule.label] = base + rule.suffix
     }
   }
 
-  return derivatives
+  return result
 }
 
 const textareaClass =
@@ -131,7 +150,7 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
           data[0]?.meanings ?? []
 
         // Extract derivatives
-        const derivativesData = extractDerivatives(meanings)
+        const derivativesData = extractDerivatives(meanings, term)
         setDerivatives(derivativesData)
 
         // Extract first available example
@@ -159,10 +178,10 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
 
           detailLines = meanings.slice(0, parts.length).map((m, i) => {
             const abbr = POS_MAP[m.partOfSpeech] ?? m.partOfSpeech
-            // Extract only 1-4 core Chinese characters
-            const coreMatch = parts[i].match(/[\u4e00-\u9fa5]{1,4}/)
-            const coreWord = coreMatch ? coreMatch[0] : parts[i].slice(0, 4)
-            return `${abbr} ${coreWord}`
+            const rawTrans = parts[i] ?? ''
+            const chineseMatch = rawTrans.match(/[\u4e00-\u9fa5，、]{1,8}/)
+            const trans = chineseMatch ? chineseMatch[0] : (coreWord || rawTrans.slice(0, 6))
+            return `${abbr} ${trans}`
           }).join('; ')
         }
       } catch { /* ignore */ }
