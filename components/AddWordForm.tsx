@@ -21,32 +21,6 @@ const POS_MAP: Record<string, string> = {
   interjection: 'int.', exclamation: 'int.',
 }
 
-function extractDerivatives(meanings: any[], baseWord: string): { [key: string]: string } {
-  const result: { [key: string]: string } = {}
-  const base = baseWord.toLowerCase()
-
-  for (const meaning of meanings) {
-    const abbr = POS_MAP[meaning.partOfSpeech] || meaning.partOfSpeech
-    if (result[abbr]) continue
-
-    const synonyms: string[] = [
-      ...(meaning.synonyms ?? []),
-      ...(meaning.definitions ?? []).flatMap((d: any) => d.synonyms ?? []),
-    ]
-
-    const related = synonyms.find(s =>
-      s !== base &&
-      s.length > 2 &&
-      !s.includes(' ') &&
-      (s.startsWith(base.slice(0, 4)) || base.startsWith(s.slice(0, 4)))
-    )
-
-    if (related) result[abbr] = related
-  }
-
-  return result
-}
-
 const textareaClass =
   'w-full border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800 placeholder-gray-300 focus:outline-none focus:border-indigo-400 transition-colors resize-none'
 
@@ -135,12 +109,31 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
 
         setPhonetic(phoneticText || '/  /')  // 如果完全没有音标，使用占位符
 
+        // Collect all meanings across ALL entries (de-duped by partOfSpeech)
+        const allMeanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] = []
+        const seenPos = new Set<string>()
+        for (const entry of data) {
+          for (const meaning of (entry.meanings ?? [])) {
+            if (!seenPos.has(meaning.partOfSpeech)) {
+              seenPos.add(meaning.partOfSpeech)
+              allMeanings.push(meaning)
+            }
+          }
+        }
+
+        // Use data[0].meanings for translation (existing logic unchanged)
         const meanings: { partOfSpeech: string; definitions: { definition: string; example?: string }[] }[] =
           data[0]?.meanings ?? []
 
-        // Extract derivatives and batch-translate them
-        const derivativesData = extractDerivatives(meanings, term)
-        const derivWords = Object.values(derivativesData)
+        // Build derivatives: each POS → first English definition → translate to Chinese
+        const derivativesRaw: { [key: string]: string } = {}
+        for (const meaning of allMeanings) {
+          const abbr = POS_MAP[meaning.partOfSpeech] || meaning.partOfSpeech
+          const firstDef = meaning.definitions?.[0]?.definition ?? ''
+          if (firstDef) derivativesRaw[abbr] = firstDef
+        }
+
+        const derivWords = Object.values(derivativesRaw)
         if (derivWords.length > 0) {
           try {
             const derivRes = await fetch(
@@ -150,23 +143,21 @@ export default function AddWordForm({ onAdd, categories, onAddCategory }: Props)
               const derivData = await derivRes.json()
               const derivTranslated: string = derivData?.responseData?.translatedText ?? ''
               const derivParts = derivTranslated.split('|').map((s: string) => s.trim())
-              const keys = Object.keys(derivativesData)
+              const keys = Object.keys(derivativesRaw)
               const enriched: { [key: string]: string } = {}
               keys.forEach((k, i) => {
-                const engForm = derivativesData[k]
                 const cnMatch = (derivParts[i] ?? '').match(/[\u4e00-\u9fa5]{1,6}/)
-                const cn = cnMatch ? cnMatch[0] : ''
-                enriched[k] = cn ? `${engForm} (${cn})` : engForm
+                enriched[k] = cnMatch ? cnMatch[0] : derivativesRaw[k].slice(0, 20)
               })
               setDerivatives(enriched)
             } else {
-              setDerivatives(derivativesData)
+              setDerivatives(derivativesRaw)
             }
           } catch {
-            setDerivatives(derivativesData)
+            setDerivatives(derivativesRaw)
           }
         } else {
-          setDerivatives(derivativesData)
+          setDerivatives({})
         }
 
         // Extract first available example
