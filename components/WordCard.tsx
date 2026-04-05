@@ -100,7 +100,7 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
                 {word.example}
               </p>
             )}
-            {word.derivatives && Object.keys(word.derivatives).length > 0 && (
+            {word.derivatives && Object.keys(word.derivatives).length > 0 ? (
               <div className="border-t border-gray-100 pt-2 mt-1">
                 <span className="text-xs font-medium text-gray-500 block mb-1.5">词汇拓展：</span>
                 <div className="flex flex-wrap gap-1.5">
@@ -116,8 +116,7 @@ export default function WordCard({ word, onToggleStatus, onDelete, onIncrementVi
                   ))}
                 </div>
               </div>
-            )}
-            {!word.derivatives && (
+            ) : (
               <div className="border-t border-gray-100 pt-2 mt-1">
                 <span className="text-xs font-medium text-gray-500 block mb-1">词汇拓展：</span>
                 <p className="text-xs text-gray-300">暂无词形变化</p>

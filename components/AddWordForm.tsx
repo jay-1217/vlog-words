@@ -21,38 +21,27 @@ const POS_MAP: Record<string, string> = {
   interjection: 'int.', exclamation: 'int.',
 }
 
-// Extract all part-of-speech types and their first definition
-const SUFFIX_RULES: { suffix: string; label: string }[] = [
-  { suffix: 'ness', label: 'n.' },
-  { suffix: 'tion', label: 'n.' },
-  { suffix: 'ly', label: 'adv.' },
-  { suffix: 'able', label: 'adj.' },
-  { suffix: 'ing', label: 'v.' },
-  { suffix: 'ed', label: 'v.' },
-]
-
 function extractDerivatives(meanings: any[], baseWord: string): { [key: string]: string } {
   const result: { [key: string]: string } = {}
   const base = baseWord.toLowerCase()
 
   for (const meaning of meanings) {
     const abbr = POS_MAP[meaning.partOfSpeech] || meaning.partOfSpeech
+    if (result[abbr]) continue
+
     const synonyms: string[] = [
       ...(meaning.synonyms ?? []),
       ...(meaning.definitions ?? []).flatMap((d: any) => d.synonyms ?? []),
     ]
+
     const related = synonyms.find(s =>
-      s !== base && s.length > 2 &&
+      s !== base &&
+      s.length > 2 &&
+      !s.includes(' ') &&
       (s.startsWith(base.slice(0, 4)) || base.startsWith(s.slice(0, 4)))
     )
-    if (related && !result[abbr]) result[abbr] = related
-  }
 
-  // fallback：后缀生成
-  if (Object.keys(result).length === 0) {
-    for (const rule of SUFFIX_RULES) {
-      if (!result[rule.label]) result[rule.label] = base + rule.suffix
-    }
+    if (related) result[abbr] = related
   }
 
   return result
